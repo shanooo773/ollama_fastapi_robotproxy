@@ -160,8 +160,8 @@ def detect_cuda() -> Dict[str, object]:
             )
             nvidia_smi_output = result.stdout.strip() or result.stderr.strip() or "nvidia-smi detected"
             cuda_available = True
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as exc:
-            nvidia_smi_output = str(exc)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+            nvidia_smi_output = "unavailable"
 
     jetson_hint = shutil.which("tegrastats") is not None
 
