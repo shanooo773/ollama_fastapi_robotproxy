@@ -62,7 +62,14 @@ async def _call_ollama_chat(
                 raise OllamaProxyError("Empty response content from Ollama.")
             return content, model
         except (httpx.TimeoutException, httpx.HTTPError, OllamaProxyError) as exc:
-            last_error = str(exc)
+            if isinstance(exc, httpx.TimeoutException):
+                last_error = "timeout"
+            elif isinstance(exc, httpx.HTTPStatusError):
+                last_error = f"http_{exc.response.status_code}"
+            elif isinstance(exc, httpx.HTTPError):
+                last_error = "http_error"
+            else:
+                last_error = "empty_response"
             logger.warning(
                 "Ollama call failed", extra={"endpoint": endpoint, "model": model, "attempt": attempt + 1}
             )
@@ -128,7 +135,13 @@ async def check_ollama_reachability(url: str, timeout_seconds: float) -> HealthC
             return HealthCheckResult(url=url, reachable=True, latency_ms=latency_ms)
         except (httpx.TimeoutException, httpx.HTTPError) as exc:
             latency_ms = int((time.perf_counter() - start) * 1000)
-            return HealthCheckResult(url=url, reachable=False, latency_ms=latency_ms, detail=str(exc))
+            if isinstance(exc, httpx.TimeoutException):
+                detail = "timeout"
+            elif isinstance(exc, httpx.HTTPStatusError):
+                detail = f"http_{exc.response.status_code}"
+            else:
+                detail = "unreachable"
+            return HealthCheckResult(url=url, reachable=False, latency_ms=latency_ms, detail=detail)
 
 
 def detect_cuda() -> Dict[str, object]:
