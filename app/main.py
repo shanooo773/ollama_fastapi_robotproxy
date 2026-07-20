@@ -6,7 +6,8 @@ from fastapi.responses import JSONResponse
 
 from app.config import get_settings
 from app.ollama_proxy import OllamaProxyError, check_ollama_reachability, detect_cuda, route_chat_request
-from app.schemas import ChatRequest, ChatResponse, HealthResponse
+from app.rag_pipeline import rag_answer
+from app.schemas import ChatRequest, ChatResponse, HealthResponse, RagRequest, RagResponse
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -58,6 +59,16 @@ async def chat(payload: ChatRequest) -> ChatResponse:
                 "attempts": exc.attempts,
             },
         ) from exc
+
+
+@app.post("/rag/ask", response_model=RagResponse)
+async def rag_ask(payload: RagRequest) -> RagResponse:
+    try:
+        result = await rag_answer(settings, payload.question, top_k=payload.top_k)
+        return RagResponse(**result)
+    except Exception as exc:
+        logger.exception("RAG query failed")
+        raise HTTPException(status_code=503, detail={"message": "RAG pipeline failed.", "error": str(exc)}) from exc
 
 
 @app.exception_handler(HTTPException)

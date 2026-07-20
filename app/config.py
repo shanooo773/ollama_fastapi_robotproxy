@@ -25,6 +25,17 @@ class Settings(BaseSettings):
     health_timeout_seconds: float = Field(default=3.0, ge=0.5)
     max_retries: int = Field(default=1, ge=0, le=5)
 
+    knowledge_base_dir: str = Field(default="./knowledge_base")
+    chroma_persist_dir: str = Field(default="./chroma_store")
+    chroma_collection_name: str = Field(default="company_kb")
+    rag_chunk_size: int = Field(default=800, ge=100)
+    rag_chunk_overlap: int = Field(default=120, ge=0)
+    rag_top_k: int = Field(default=4, ge=1, le=10)
+
+    enable_query_rewrite: bool = Field(default=True)
+    rag_distance_threshold: float = Field(default=0.40, ge=0.0, le=2.0)
+    rag_log_path: str = Field(default="./logs/rag_events.jsonl")
+
     def remote_urls(self) -> List[str]:
         return [url.strip().rstrip("/") for url in self.ollama_remote_urls.split(",") if url.strip()]
 

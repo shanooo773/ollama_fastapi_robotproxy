@@ -1,0 +1,50 @@
+﻿[
+    {
+        "model":  "llama3.1",
+        "response":  "\"Welcome to our booth! Our company, NovaTech, specializes in developing cutting-edge robotic solutions that optimize industrial processes and improve operational efficiency. Our flagship product, the NovaBot, is a versatile and AI-powered robot designed to streamline manufacturing workflows, reduce costs, and enhance quality control â making it an essential tool for any forward-thinking business.\"",
+        "wall_time_s":  62.99,
+        "total_duration_s":  62.21,
+        "load_duration_s":  26.824,
+        "prompt_eval_count":  55,
+        "prompt_eval_duration_s":  3.994,
+        "eval_count":  69,
+        "eval_duration_s":  31.345,
+        "tokens_per_second":  2.2
+    },
+    {
+        "model":  "mistral",
+        "response":  " Our company specializes in developing advanced robotic solutions for various industries. Our innovative products aim to automate repetitive tasks, increase productivity, and ensure precision, thereby reducing costs and improving efficiency. You should be interested in our offerings because they can help streamline your operations, ultimately leading to growth and success in today\u0027s competitive business landscape.",
+        "wall_time_s":  57.636,
+        "total_duration_s":  56.664,
+        "load_duration_s":  15.587,
+        "prompt_eval_count":  51,
+        "prompt_eval_duration_s":  3.487,
+        "eval_count":  71,
+        "eval_duration_s":  37.582,
+        "tokens_per_second":  1.89
+    },
+    {
+        "model":  "phi3",
+        "response":  "Our company specializes in cutting-edge automation solutions designed to streamline manufacturing processes for efficiency gains across various industries. Our flagship robotic arm assists with precision tasks, reducing human error and increasing production speed by up to 50%. We believe our innovative technology will significantly contribute to your operational productivity, making it a compelling investment opportunity.",
+        "wall_time_s":  49.012,
+        "total_duration_s":  47.671,
+        "load_duration_s":  24.266,
+        "prompt_eval_count":  57,
+        "prompt_eval_duration_s":  2.868,
+        "eval_count":  80,
+        "eval_duration_s":  20.442,
+        "tokens_per_second":  3.91
+    },
+    {
+        "model":  "qwen2",
+        "response":  "Our company specializes in advanced robotics solutions designed to enhance productivity and efficiency across various industries. By leveraging cutting-edge technology, we create innovative products that not only streamline processes but also offer sustainable and scalable solutions. If you\u0027re looking for ways to optimize operations, reduce costs, or improve the quality of your work, engaging with our product could significantly benefit your business endeavors.",
+        "wall_time_s":  57.771,
+        "total_duration_s":  56.525,
+        "load_duration_s":  21.277,
+        "prompt_eval_count":  64,
+        "prompt_eval_duration_s":  4.653,
+        "eval_count":  73,
+        "eval_duration_s":  30.53,
+        "tokens_per_second":  2.39
+    }
+]

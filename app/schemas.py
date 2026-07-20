@@ -40,3 +40,18 @@ class HealthResponse(BaseModel):
     models: dict
     cuda: dict
     ollama: dict
+
+
+class RagRequest(BaseModel):
+    question: str = Field(min_length=1)
+    top_k: Optional[int] = Field(default=None, ge=1, le=10)
+
+
+class RagResponse(BaseModel):
+    answer: str
+    sources: List[str]
+    retrieved_chunks: List[str]
+    distances: List[float]
+    used_rag: bool
+    search_query: str
+    timings: dict
