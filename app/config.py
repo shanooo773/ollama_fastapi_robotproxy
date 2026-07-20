@@ -33,8 +33,12 @@ class Settings(BaseSettings):
     rag_top_k: int = Field(default=4, ge=1, le=10)
 
     enable_query_rewrite: bool = Field(default=True)
-    rag_distance_threshold: float = Field(default=0.40, ge=0.0, le=2.0)
+    rag_distance_threshold: float = Field(default=0.46, ge=0.0, le=2.0)
     rag_log_path: str = Field(default="./logs/rag_events.jsonl")
+
+    # Keeps a model resident in (V)RAM between requests instead of reloading it every call.
+    # "30m" = stay loaded for 30 minutes of inactivity; "-1" = stay loaded indefinitely.
+    ollama_keep_alive: str = Field(default="30m")
 
     def remote_urls(self) -> List[str]:
         return [url.strip().rstrip("/") for url in self.ollama_remote_urls.split(",") if url.strip()]

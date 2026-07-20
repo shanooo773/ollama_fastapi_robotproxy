@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Robot Proxy — RAG Chat</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    max-width: 720px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    background: #0b1f2a;
+    color: #eaf2f5;
+  }
+  h1 { font-size: 1.3rem; }
+  #conn-row { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  #server-url { flex: 1; padding: 0.5rem; border-radius: 6px; border: 1px solid #345; background: #12303f; color: #eaf2f5; }
+  button {
+    padding: 0.5rem 1rem; border-radius: 6px; border: none;
+    background: #2e8b57; color: white; cursor: pointer; font-weight: 600;
+  }
+  button:disabled { background: #456; cursor: not-allowed; }
+  #status { font-size: 0.85rem; margin-bottom: 1rem; color: #9ad; }
+  #log { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem; }
+  .msg { padding: 0.6rem 0.9rem; border-radius: 10px; max-width: 90%; white-space: pre-wrap; }
+  .user { align-self: flex-end; background: #1f6fb2; }
+  .bot { align-self: flex-start; background: #16323f; }
+  .meta { font-size: 0.75rem; opacity: 0.7; margin-top: 0.3rem; }
+  #input-row { display: flex; gap: 0.5rem; }
+  #question { flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid #345; background: #12303f; color: #eaf2f5; }
+</style>
+</head>
+<body>
+
+<h1>Robot Proxy — RAG Chat (via Tailscale)</h1>
+
+<div id="conn-row">
+  <input id="server-url" type="text" placeholder="ws://100.x.x.x:8000/ws/rag" />
+  <button id="connect-btn">Connect</button>
+</div>
+<div id="status">Not connected.</div>
+
+<div id="log"></div>
+
+<div id="input-row">
+  <input id="question" type="text" placeholder="Ask a question..." disabled />
+  <button id="send-btn" disabled>Send</button>
+</div>
+
+<script>
+let ws = null;
+let currentBotBubble = null;
+
+const statusEl = document.getElementById('status');
+const logEl = document.getElementById('log');
+const urlInput = document.getElementById('server-url');
+const connectBtn = document.getElementById('connect-btn');
+const questionInput = document.getElementById('question');
+const sendBtn = document.getElementById('send-btn');
+
+function addBubble(text, cls) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + cls;
+  div.textContent = text;
+  logEl.appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth' });
+  return div;
+}
+
+function setConnected(connected) {
+  questionInput.disabled = !connected;
+  sendBtn.disabled = !connected;
+  connectBtn.textContent = connected ? 'Disconnect' : 'Connect';
+}
+
+connectBtn.addEventListener('click', () => {
+  if (ws) {
+    ws.close();
+    ws = null;
+    return;
+  }
+
+  const url = urlInput.value.trim();
+  if (!url) {
+    statusEl.textContent = 'Enter the server WebSocket URL first (e.g. ws://100.x.x.x:8000/ws/rag).';
+    return;
+  }
+
+  statusEl.textContent = 'Connecting to ' + url + ' ...';
+  ws = new WebSocket(url);
+
+  ws.onopen = () => {
+    statusEl.textContent = 'Connected to ' + url;
+    setConnected(true);
+  };
+
+  ws.onclose = () => {
+    statusEl.textContent = 'Disconnected.';
+    setConnected(false);
+    ws = null;
+  };
+
+  ws.onerror = () => {
+    statusEl.textContent = 'Connection error — check the URL, that the server is running, and Tailscale is up.';
+  };
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    if (data.type === 'meta') {
+      currentBotBubble = addBubble('', 'bot');
+      const routeNote = data.used_rag ? '(answering from knowledge base)' : '(general chat)';
+      currentBotBubble.dataset.route = routeNote;
+    } else if (data.type === 'token') {
+      if (currentBotBubble) currentBotBubble.textContent += data.text;
+    } else if (data.type === 'done') {
+      if (currentBotBubble) {
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        const sources = data.sources && data.sources.length ? ' | sources: ' + data.sources.join(', ') : '';
+        meta.textContent = (data.used_rag ? 'RAG' : 'direct chat') +
+          ' | total ' + data.timings.total_s + 's' + sources;
+        currentBotBubble.appendChild(meta);
+      }
+      currentBotBubble = null;
+    } else if (data.type === 'error') {
+      addBubble('Error: ' + data.message, 'bot');
+    }
+  };
+});
+
+function sendQuestion() {
+  const text = questionInput.value.trim();
+  if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+  addBubble(text, 'user');
+  ws.send(text);
+  questionInput.value = '';
+}
+
+sendBtn.addEventListener('click', sendQuestion);
+questionInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') sendQuestion();
+});
+</script>
+
+</body>
+</html>

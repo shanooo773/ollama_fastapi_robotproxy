@@ -1,12 +1,13 @@
+import json
 import logging
 from typing import Dict
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings
 from app.ollama_proxy import OllamaProxyError, check_ollama_reachability, detect_cuda, route_chat_request
-from app.rag_pipeline import rag_answer
+from app.rag_pipeline import rag_answer, rag_answer_stream
 from app.schemas import ChatRequest, ChatResponse, HealthResponse, RagRequest, RagResponse
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -69,6 +70,27 @@ async def rag_ask(payload: RagRequest) -> RagResponse:
     except Exception as exc:
         logger.exception("RAG query failed")
         raise HTTPException(status_code=503, detail={"message": "RAG pipeline failed.", "error": str(exc)}) from exc
+
+
+@app.websocket("/ws/rag")
+async def ws_rag(websocket: WebSocket):
+    """Streaming RAG endpoint. Client sends a plain-text question per message; server streams
+    back JSON events: {"type": "meta", ...} once routing is decided, {"type": "token", "text": ...}
+    per generated token, then {"type": "done", "answer": ..., "timings": ...} at the end."""
+    await websocket.accept()
+    try:
+        while True:
+            question = await websocket.receive_text()
+            if not question.strip():
+                continue
+            try:
+                async for event in rag_answer_stream(settings, question):
+                    await websocket.send_text(json.dumps(event))
+            except Exception as exc:
+                logger.exception("Streaming RAG query failed")
+                await websocket.send_text(json.dumps({"type": "error", "message": str(exc)}))
+    except WebSocketDisconnect:
+        pass
 
 
 @app.exception_handler(HTTPException)
