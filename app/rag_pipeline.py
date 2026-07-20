@@ -1,12 +1,23 @@
 import json
 import time
-from typing import AsyncGenerator, Dict, List, Optional
+from typing import AsyncGenerator, Dict, List, Optional, Union
 
 import httpx
 
 from app.config import Settings
 from app.rag_logging import log_rag_event
 from app.rag_store import embed_text, get_collection
+
+
+def _keep_alive_value(raw: str) -> Union[int, str]:
+    """Ollama's keep_alive expects a duration string with a unit (e.g. "30m") OR a raw JSON
+    number of seconds, where negative means "keep loaded forever". A bare numeric string like
+    "-1" with no unit fails Go's duration parser and returns 400 Bad Request, so plain integers
+    are converted to a real JSON number here instead of being sent as a string."""
+    try:
+        return int(raw)
+    except ValueError:
+        return raw
 
 RAG_PROMPT_TEMPLATE = """You are an AI assistant representing a company at a business expo booth. \
 Answer the visitor's question using ONLY the context below. If the answer is not contained in the \
@@ -44,7 +55,7 @@ async def _rewrite_query(client: httpx.AsyncClient, settings: Settings, question
             "model": settings.local_fallback_model,
             "prompt": REWRITE_PROMPT_TEMPLATE.format(question=question),
             "stream": False,
-            "keep_alive": settings.ollama_keep_alive,
+            "keep_alive": _keep_alive_value(settings.ollama_keep_alive),
         },
     )
     response.raise_for_status()
@@ -140,7 +151,7 @@ async def rag_answer(settings: Settings, question: str, top_k: Optional[int] = N
                 "model": settings.remote_primary_model,
                 "prompt": ctx["prompt"],
                 "stream": False,
-                "keep_alive": settings.ollama_keep_alive,
+                "keep_alive": _keep_alive_value(settings.ollama_keep_alive),
             },
         )
         gen_response.raise_for_status()
@@ -192,7 +203,7 @@ async def rag_answer_stream(
                 "model": settings.remote_primary_model,
                 "prompt": ctx["prompt"],
                 "stream": True,
-                "keep_alive": settings.ollama_keep_alive,
+                "keep_alive": _keep_alive_value(settings.ollama_keep_alive),
             },
         ) as response:
             response.raise_for_status()
